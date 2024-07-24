@@ -1,0 +1,87 @@
+{
+	"name": "Email Notification to Manager 14 days before End Date",
+	"description": "Workflow to trigger an email to line manager 14 days before the end of date of direct report.",
+	"modified": "2024-07-24T12:56:06.488650847Z",
+	"modifiedBy": {
+		"type": "IDENTITY",
+		"id": "2c91808476e467560176f0dc60c95c3a",
+		"name": "Ebenezer.Aizeboje"
+	},
+	"definition": {
+		"start": "Compare Strings",
+		"steps": {
+			"Compare Strings": {
+				"choiceList": [
+					{
+						"comparator": "StringEquals",
+						"nextStep": "Get Identity",
+						"variableA.$": "$.trigger.changes[?(@.attribute == \"cloudLifecycleState\")].newValue",
+						"variableB": "inactive14"
+					}
+				],
+				"defaultStep": "success",
+				"description": "Verifies that the change in cloudLifecycleState is to \"Inactive 14\".",
+				"type": "choice"
+			},
+			"Get Identity": {
+				"actionId": "sp:get-identity",
+				"attributes": {
+					"id.$": "$.trigger.identity.id"
+				},
+				"description": "Retrieves available details about the identity.",
+				"nextStep": "Get Identity 1",
+				"type": "action",
+				"versionNumber": 2
+			},
+			"Get Identity 1": {
+				"actionId": "sp:get-identity",
+				"attributes": {
+					"id.$": "$.getIdentity.managerRef.id"
+				},
+				"description": "This node is used to gather information about the user's manager to populate their email in the recipient field.",
+				"nextStep": "Send Email 1",
+				"type": "action",
+				"versionNumber": 2
+			},
+			"Send Email 1": {
+				"actionId": "sp:send-email",
+				"attributes": {
+					"body": "Dear ${manager}<br><p>This email is to notify you that employee <b style=\"\">${displayName}</b> IT access will be revoked on x date .</p><br>Thank you,<br>Your Access Team",
+					"context": {
+						"displayName.$": "$.getIdentity.attributes.displayName",
+						"manager.$": "$.getIdentity1.attributes.firstname"
+					},
+					"from": "no-reply@sailpoint.com",
+					"recipientEmailList.$": "$.getIdentity1.attributes.email",
+					"replyTo": "no-reply@sailpoint.com",
+					"subject": "Employee Leaving"
+				},
+				"description": "Notifies the users manager that the user is now inactive. This step can also be configured to notify relevant stakeholders using a distribution list.",
+				"displayName": "Send Leavers Email",
+				"nextStep": "success 1",
+				"type": "action",
+				"versionNumber": 2
+			},
+			"success": {
+				"description": "Terminates the workflow when the comparison operator indicates the user was changed to any lifecycle state other than \"Inactive.\"",
+				"type": "success"
+			},
+			"success 1": {
+				"description": "Finishes the workflow in a Success state.",
+				"type": "success"
+			}
+		}
+	},
+	"creator": {
+		"type": "IDENTITY",
+		"id": "2c91808476e467560176f0dc60c95c3a",
+		"name": "Ebenezer.Aizeboje"
+	},
+	"trigger": {
+		"type": "EVENT",
+		"attributes": {
+			"filter.$": "$.changes[?(@.attribute == \"cloudLifecycleState\")]",
+			"id": "idn:identity-attributes-changed"
+		}
+	}
+}
